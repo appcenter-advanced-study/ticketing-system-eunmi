@@ -76,6 +76,27 @@ class ReservationServiceTest {
     }
 
     @Test
+    @DisplayName("티켓 재고가 0이하일 경우 예외가 발생한다.")
+    public void reservationTest2() throws Exception {
+        // given
+        String name = "eunmi";
+        String name2 = "spring";
+
+        // when
+        reservationService.reserve(name, ticketId);
+
+        // then
+        // 재고 부족으로 예외 발생
+        assertThatThrownBy(() -> reservationService.reserve(name2, ticketId))
+                .isInstanceOf(RuntimeException.class);
+
+        // 재고 확인
+        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow();
+        TicketStock ticketStock = ticketStockRepository.findByTicketId(ticket).orElseThrow();
+        assertThat(ticketStock.getQuantity()).isEqualTo(0);
+    }
+
+    @Test
     @DisplayName("경쟁 조건을 설정 하지 않은 경우, 동시에 같은 티켓수를 보고 모두 예매가 가능한 오류가 발생하게 된다.")
     public void reservationException1() throws Exception {
         // given
