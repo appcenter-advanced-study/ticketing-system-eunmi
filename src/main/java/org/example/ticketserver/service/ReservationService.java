@@ -8,12 +8,15 @@ import org.example.ticketserver.mapper.ReservationMapper;
 import org.example.ticketserver.repository.ReservationRepository;
 import org.example.ticketserver.repository.TicketRepository;
 import org.example.ticketserver.repository.TicketStockRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class ReservationService {
+    private final Logger logger = LoggerFactory.getLogger(ReservationService.class);
     private final TicketRepository ticketRepository;
     private final TicketStockRepository ticketStockRepository;
     private final ReservationRepository reservationRepository;
@@ -33,6 +36,7 @@ public class ReservationService {
         ticketStock.reserve();
         ticketStockRepository.save(ticketStock);
         reservationRepository.save(reservation);
+        logger.info("현재 남은 티켓 수 : {}장", ticketStock.getQuantity());
     }
 
 }
