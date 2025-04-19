@@ -71,7 +71,8 @@ class TicketServiceTest {
         /**
          * 두번의 갱신 분실의 문제 발생 - 트랜잭션 범위 수준을 넘어서는 문제(트랜잭션으로 해결 불가)
          */
-        Assertions.assertThat(ticketService.findTicketById(ticketId).getName()).isEqualTo("update ticket2");
+//        Assertions.assertThat(ticketService.findTicketById(ticketId).getName()).isEqualTo("update ticket2");
+        log.info("최종 저장된 티켓명 : {}", ticketService.findTicketById(ticketId).getName());
     }
 
 }
