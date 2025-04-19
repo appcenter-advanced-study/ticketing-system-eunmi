@@ -41,7 +41,7 @@ class TicketServiceTest {
     @DisplayName("동시에 티켓명을 변경할 경우, 마지막에 등록한 수정정보로 등록된다.")
     public void updateTicketTest1() throws Exception {
         // given
-        int threadCount = 2;
+        int threadCount = 3;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);  // thread 생성
         CountDownLatch latch = new CountDownLatch(threadCount);  // 모든 스레드 작업이 끝날 때까지 await() 대기
 
@@ -52,6 +52,7 @@ class TicketServiceTest {
             executor.submit(() -> {
                 try {
                     try {
+                        Thread.sleep(100);
                         TicketRequest.UpdateTicketRequest dto =
                                 new TicketRequest.UpdateTicketRequest(ticketId, "update ticket" + idx);
                         Ticket ticket = ticketService.updateTicket(dto);
@@ -71,7 +72,6 @@ class TicketServiceTest {
         /**
          * 두번의 갱신 분실의 문제 발생 - 트랜잭션 범위 수준을 넘어서는 문제(트랜잭션으로 해결 불가)
          */
-//        Assertions.assertThat(ticketService.findTicketById(ticketId).getName()).isEqualTo("update ticket2");
         log.info("최종 저장된 티켓명 : {}", ticketService.findTicketById(ticketId).getName());
     }
 
