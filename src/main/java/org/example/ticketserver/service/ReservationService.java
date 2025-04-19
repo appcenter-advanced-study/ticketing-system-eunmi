@@ -30,10 +30,10 @@ public class ReservationService {
     public void reserve(String name, Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 티켓입니다."));
-        Reservation reservation = ReservationMapper.toEntity(name, ticket);
         TicketStock ticketStock = ticketStockRepository.findByTicketId(ticket)
                 .orElseThrow(() -> new RuntimeException("해당 티켓의 재고를 찾을 수 없습니다."));
         ticketStock.reserve();
+        Reservation reservation = ReservationMapper.toEntity(name, ticket);
         ticketStockRepository.save(ticketStock);
         reservationRepository.save(reservation);
         logger.info("현재 남은 티켓 수 : {}장", ticketStock.getQuantity());
