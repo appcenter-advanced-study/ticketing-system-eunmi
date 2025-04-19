@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ReservationService {
@@ -39,4 +41,19 @@ public class ReservationService {
         logger.info("현재 남은 티켓 수 : {}장", ticketStock.getQuantity());
     }
 
+    // 예매 취소(삭제)
+    @Transactional
+    public void cancel(Reservation reservation) {
+        reservationRepository.delete(reservation);
+    }
+
+    @Transactional
+    public List<Reservation> findAll() {
+        return reservationRepository.findAll();
+    }
+
+    @Transactional
+    public void deleteAll() {
+        reservationRepository.deleteAll();
+    }
 }

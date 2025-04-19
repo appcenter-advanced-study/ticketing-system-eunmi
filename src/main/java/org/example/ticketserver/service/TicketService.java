@@ -20,6 +20,7 @@ public class TicketService {
     }
 
     // 티켓 단건 조회
+    @Transactional
     public Ticket findTicketById(Long id) {
         return ticketRepository.findById(id).orElseThrow(() -> new RuntimeException("존재하지 않는 티켓입니다."));
     }
@@ -37,5 +38,10 @@ public class TicketService {
     public void deleteTicket(Long ticketId) {
         Ticket ticket = findTicketById(ticketId);
         ticketRepository.delete(ticket);
+    }
+
+    @Transactional
+    public void deleteAll() {
+        ticketRepository.deleteAll();
     }
 }
