@@ -124,6 +124,7 @@ class ReservationServiceTest {
             executor.submit(() -> {
                 try {
                     try {
+                        Thread.sleep(100);
                         reservationService.reserve("member" + idx, ticketId);
                         log.info("예매 성공 : {}", "member" + idx);
                     } catch (Exception e) {
@@ -156,7 +157,7 @@ class ReservationServiceTest {
         this.ticketId = ticketId;
         log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
 
-        int threadCount = 10;
+        int threadCount = 100;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);  // thread 생성
         CountDownLatch latch = new CountDownLatch(threadCount);  // 모든 스레드 작업이 끝날 때까지 await() 대기
 
@@ -167,6 +168,7 @@ class ReservationServiceTest {
             executor.submit(() -> {
                 try {
                     try {
+                        Thread.sleep(100);
                         reservationService.reserve("member" + idx, ticketId);
                         log.info("예매 성공 : {}", "member" + idx);
                     } catch (Exception e) {
