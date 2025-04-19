@@ -29,35 +29,24 @@ class ReservationServiceTest {
     private Long ticketId;
 
     @Autowired
-    private TicketRepository ticketRepository;
+    private TicketService ticketService;
     @Autowired
-    private TicketStockRepository ticketStockRepository;
-    @Autowired
-    private ReservationRepository reservationRepository;
+    private TicketStockService ticketStockService;
     @Autowired
     private ReservationService reservationService;
 
 
     @BeforeEach
-    @Transactional
     void beforeEach() {
-        log.info("beforeEach : 티켓 생성 및 재고 등록");
-        Ticket ticket = new Ticket("ticket1");
-        Ticket savedTicket = ticketRepository.save(ticket);
-
-        TicketStock ticketStock = new TicketStock(ticket, 1);
-        ticketStockRepository.save(ticketStock);
-        this.ticketId = savedTicket.getId();
-        log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
+        this.ticketId = null;
     }
 
     @AfterEach
-    @Transactional
     void afterEach() {
         log.info("afterEach : 데이터베이스 초기화");
-        reservationRepository.deleteAll();
-        ticketStockRepository.deleteAll();
-        ticketRepository.deleteAll();
+        reservationService.deleteAll();
+        ticketStockService.deleteAll();
+        ticketService.deleteAll();
     }
 
     @Test
@@ -66,12 +55,20 @@ class ReservationServiceTest {
         // given
         String name = "eunmi";
 
+        log.info("beforeEach : 티켓 생성 및 재고 등록");
+        Ticket newTicket = new Ticket("ticket1");
+        Long ticketId = ticketService.createTicket(newTicket);
+        TicketStock newTicketStock = new TicketStock(newTicket, 1);
+        ticketStockService.save(newTicketStock);
+        this.ticketId = ticketId;
+        log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
+
         // when
         reservationService.reserve(name, ticketId);
 
         // then
-        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow();
-        TicketStock ticketStock = ticketStockRepository.findByTicketId(ticket).orElseThrow();
+        Ticket ticket = ticketService.findTicketById(ticketId);
+        TicketStock ticketStock = ticketStockService.findByTicketId(ticket);
         assertThat(ticketStock.getQuantity()).isEqualTo(0);
     }
 
@@ -82,6 +79,14 @@ class ReservationServiceTest {
         String name = "eunmi";
         String name2 = "spring";
 
+        log.info("beforeEach : 티켓 생성 및 재고 등록");
+        Ticket newTicket = new Ticket("ticket1");
+        Long ticketId = ticketService.createTicket(newTicket);
+        TicketStock newTicketStock = new TicketStock(newTicket, 1);
+        ticketStockService.save(newTicketStock);
+        this.ticketId = ticketId;
+        log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
+
         // when
         reservationService.reserve(name, ticketId);
 
@@ -91,15 +96,66 @@ class ReservationServiceTest {
                 .isInstanceOf(RuntimeException.class);
 
         // 재고 확인
-        Ticket ticket = ticketRepository.findById(ticketId).orElseThrow();
-        TicketStock ticketStock = ticketStockRepository.findByTicketId(ticket).orElseThrow();
+        Ticket ticket = ticketService.findTicketById(ticketId);
+        TicketStock ticketStock = ticketStockService.findByTicketId(ticket);
         assertThat(ticketStock.getQuantity()).isEqualTo(0);
     }
 
     @Test
-    @DisplayName("경쟁 조건을 설정 하지 않은 경우, 동시에 같은 티켓수를 보고 모두 예매가 가능한 오류가 발생하게 된다.")
+    @DisplayName("동시성 테스트 - 100명이 동시에 같은 재고가 100장인 티켓을 예매할 경우, 예매가 성공한다.")
     public void reservationException1() throws Exception {
         // given
+        int threadCount = 100;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);  // thread 생성
+        CountDownLatch latch = new CountDownLatch(threadCount);  // 모든 스레드 작업이 끝날 때까지 await() 대기
+
+        log.info("beforeEach : 티켓 생성 및 재고 등록");
+        Ticket newTicket = new Ticket("ticket1");
+        Long ticketId = ticketService.createTicket(newTicket);
+        TicketStock newTicketStock = new TicketStock(newTicket, 100);
+        ticketStockService.save(newTicketStock);
+        this.ticketId = ticketId;
+        log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
+
+        log.info("티켓 예매를 시작합니다. : {}", ticketId);
+        // when
+        for (int i = 0; i < threadCount; i++) {
+            final int idx = i + 1;
+            executor.submit(() -> {
+                try {
+                    try {
+                        reservationService.reserve("member" + idx, ticketId);
+                        log.info("예매 성공 : {}", "member" + idx);
+                    } catch (Exception e) {
+                        log.info("예매 실패 : {}번 회원 {}", idx, e.getMessage());
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await(); // thread 끝날 때까지 대기
+
+        // then
+        assertThat(reservationService.findAll().size()).isEqualTo(100);
+        Ticket ticket = ticketService.findTicketById(ticketId);
+        TicketStock stock = ticketStockService.findByTicketId(ticket);
+        assertThat(stock.getQuantity()).isZero(); // 재고가 정확히 0이어야 성공
+    }
+
+    @Test
+    @DisplayName("예외 테스트 - 동시에 1장의 티켓을 예매할 경우, 1명의 회원만 예매가 성공한다.")
+    public void reservationException2() throws Exception {
+        // given
+        log.info("beforeEach : 티켓 생성 및 재고 등록");
+        Ticket newTicket = new Ticket("ticket1");
+        Long ticketId = ticketService.createTicket(newTicket);
+        TicketStock newTicketStock = new TicketStock(newTicket, 1);
+        ticketStockService.save(newTicketStock);
+        this.ticketId = ticketId;
+        log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
+
         int threadCount = 10;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);  // thread 생성
         CountDownLatch latch = new CountDownLatch(threadCount);  // 모든 스레드 작업이 끝날 때까지 await() 대기
@@ -125,8 +181,9 @@ class ReservationServiceTest {
         latch.await(); // thread 끝날 때까지 대기
 
         // then
-        assertThat(reservationRepository.findAll().size()).isEqualTo(10);  // 문제 상황 ! 모든 구매자가 구매를 성공하게 되는 오류 발생 ..
-        TicketStock stock = ticketStockRepository.findById(ticketId).orElseThrow();
+        assertThat(reservationService.findAll().size()).isEqualTo(1);
+        Ticket ticket = ticketService.findTicketById(ticketId);
+        TicketStock stock = ticketStockService.findByTicketId(ticket);
         assertThat(stock.getQuantity()).isZero(); // 재고가 정확히 0이어야 성공
     }
 }
