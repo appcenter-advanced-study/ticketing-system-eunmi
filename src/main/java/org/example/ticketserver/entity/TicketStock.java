@@ -18,7 +18,9 @@ public class TicketStock {
     @OneToOne
     @JoinColumn(name = "TICKET_ID")
     private Ticket ticketId;
-    private int quantity;
+    private Integer quantity;
+    @Version
+    private Integer version;
 
     public TicketStock(Ticket ticketId, int quantity) {
         this.ticketId = ticketId;
