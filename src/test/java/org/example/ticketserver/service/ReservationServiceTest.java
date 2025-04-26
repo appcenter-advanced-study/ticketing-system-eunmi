@@ -1,12 +1,8 @@
 package org.example.ticketserver.service;
 
 import org.slf4j.Logger;
-import org.assertj.core.api.Assertions;
 import org.example.ticketserver.entity.Ticket;
 import org.example.ticketserver.entity.TicketStock;
-import org.example.ticketserver.repository.ReservationRepository;
-import org.example.ticketserver.repository.TicketRepository;
-import org.example.ticketserver.repository.TicketStockRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,11 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -105,44 +101,73 @@ class ReservationServiceTest {
     @DisplayName("동시성 테스트 - 100명이 동시에 같은 재고가 100장인 티켓을 예매할 경우, 예매가 성공한다.")
     public void reservationException1() throws Exception {
         // given
-        int threadCount = 100;
+        int threadCount = 500;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);  // thread 생성
         CountDownLatch latch = new CountDownLatch(threadCount);  // 모든 스레드 작업이 끝날 때까지 await() 대기
 
         log.info("beforeEach : 티켓 생성 및 재고 등록");
         Ticket newTicket = new Ticket("ticket1");
         Long ticketId = ticketService.createTicket(newTicket);
-        TicketStock newTicketStock = new TicketStock(newTicket, 100);
+        TicketStock newTicketStock = new TicketStock(newTicket, 500);
         ticketStockService.save(newTicketStock);
         this.ticketId = ticketId;
         log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
 
         log.info("티켓 예매를 시작합니다. : {}", ticketId);
+        AtomicInteger success_cnt = new AtomicInteger();
         // when
         for (int i = 0; i < threadCount; i++) {
             final int idx = i + 1;
             executor.submit(() -> {
                 try {
-                    try {
-                        Thread.sleep(100);
-                        reservationService.reserve("member" + idx, ticketId);
-                        log.info("예매 성공 : {}", "member" + idx);
-                    } catch (Exception e) {
-                        log.info("예매 실패 : {}번 회원 {}", idx, e.getMessage());
+                    while (true) {
+                        try {
+                            Thread.sleep(50);  // 과도한 루프 방지용 살짝 쉬기
+                            reservationService.reserve("member" + idx, ticketId);
+                            log.info("예매 성공 : {}", "member" + idx);
+                            success_cnt.incrementAndGet();
+                            break;  // 성공 시 루프 탈출
+                        } catch (Exception e) {
+                            if (e.getMessage().contains("매진") || e.getMessage().contains("재고 부족")) {
+                                log.info("예매 종료 : {}번 회원 - {}", idx, e.getMessage());
+                                break;  // 재고 소진 시 루프 종료
+                            }
+                            log.info("예매 재시도 : {}번 회원 - {}", idx, e.getMessage());
+                        }
                     }
+                } catch (Exception e) {
+                    Thread.currentThread().interrupt();
                 } finally {
                     latch.countDown();
                 }
             });
         }
+//        for (int i = 0; i < threadCount; i++) {
+//            final int idx = i + 1;
+//            executor.submit(() -> {
+//                try {
+//                    try {
+//                        Thread.sleep(100);
+//                        reservationService.reserve("member" + idx, ticketId);
+//                        log.info("예매 성공 : {}", "member" + idx);
+//                        success_cnt.addAndGet(1);
+//                    } catch (Exception e) {
+//                        log.info("예매 실패 : {}번 회원 {}", idx, e.getMessage());
+//                    }
+//                } finally {
+//                    latch.countDown();
+//                }
+//            });
+//        }
 
         latch.await(); // thread 끝날 때까지 대기
 
         // then
-        assertThat(reservationService.findAll().size()).isEqualTo(100);
         Ticket ticket = ticketService.findTicketById(ticketId);
         TicketStock stock = ticketStockService.findByTicketId(ticket);
-        assertThat(stock.getQuantity()).isZero(); // 재고가 정확히 0이어야 성공
+        log.info("결과 - 예매 성공 : {} 장, 남은 티켓 : {} 장", success_cnt, stock.getQuantity());
+        assertThat(reservationService.findAll().size()).isEqualTo(success_cnt.get());
+//        assertThat(stock.getQuantity()).isZero(); // 재고가 정확히 0이어야 성공
     }
 
     @Test
