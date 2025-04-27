@@ -19,7 +19,7 @@ public class TicketStock {
     @JoinColumn(name = "TICKET_ID")
     private Ticket ticketId;
     private Integer quantity;
-    @Version
+//    @Version
     private Integer version;
 
     public TicketStock(Ticket ticketId, int quantity) {
