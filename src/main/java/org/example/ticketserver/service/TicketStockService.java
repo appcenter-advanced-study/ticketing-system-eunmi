@@ -1,7 +1,7 @@
 package org.example.ticketserver.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.ticketserver.dto.TicketStockRequest;
+import org.example.ticketserver.dto.ticketStock.TicketStockRequest;
 import org.example.ticketserver.entity.Ticket;
 import org.example.ticketserver.entity.TicketStock;
 import org.example.ticketserver.repository.TicketRepository;

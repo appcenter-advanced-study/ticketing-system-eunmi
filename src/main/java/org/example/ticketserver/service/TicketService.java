@@ -1,7 +1,7 @@
 package org.example.ticketserver.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.ticketserver.dto.TicketRequest;
+import org.example.ticketserver.dto.ticket.TicketRequest;
 import org.example.ticketserver.entity.Ticket;
 import org.example.ticketserver.repository.TicketRepository;
 import org.springframework.stereotype.Service;

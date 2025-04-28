@@ -1,4 +1,4 @@
-package org.example.ticketserver.dto;
+package org.example.ticketserver.dto.ticket;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

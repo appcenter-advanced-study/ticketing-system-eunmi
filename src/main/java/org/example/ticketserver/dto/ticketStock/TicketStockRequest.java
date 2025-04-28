@@ -1,10 +1,9 @@
-package org.example.ticketserver.dto;
+package org.example.ticketserver.dto.ticketStock;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.ticketserver.entity.Ticket;
-import org.example.ticketserver.entity.TicketStock;
 
 public class TicketStockRequest {
     @Getter
