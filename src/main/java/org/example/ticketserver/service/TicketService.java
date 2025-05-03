@@ -1,12 +1,14 @@
 package org.example.ticketserver.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.ticketserver.dto.ticket.TicketRequest;
 import org.example.ticketserver.entity.Ticket;
 import org.example.ticketserver.repository.TicketRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketService {
@@ -22,6 +24,7 @@ public class TicketService {
     // 티켓 단건 조회
     @Transactional
     public Ticket findTicketById(Long id) {
+        log.info("Find ticket by id: {}", id);
         return ticketRepository.findById(id).orElseThrow(() -> new RuntimeException("존재하지 않는 티켓입니다."));
     }
 

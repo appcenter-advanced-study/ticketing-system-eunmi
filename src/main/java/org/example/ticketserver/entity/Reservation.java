@@ -11,12 +11,13 @@ import org.springframework.stereotype.Service;
 @Getter
 @Setter
 @NoArgsConstructor
+@Table(name = "reservation")
 public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    @JoinColumn(name = "TICKET_ID")
+    @JoinColumn(name = "ticket_id")
     private Ticket ticketId;
     private String username;
 

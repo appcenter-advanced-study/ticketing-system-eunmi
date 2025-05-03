@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
+@Table(name="ticket_stock")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,7 +17,7 @@ public class TicketStock {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @OneToOne
-    @JoinColumn(name = "TICKET_ID")
+    @JoinColumn(name = "ticket_id")
     private Ticket ticketId;
     private Integer quantity;
 //    @Version
