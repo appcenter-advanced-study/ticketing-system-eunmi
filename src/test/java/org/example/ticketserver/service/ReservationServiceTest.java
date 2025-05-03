@@ -1,5 +1,6 @@
 package org.example.ticketserver.service;
 
+import org.example.ticketserver.dto.reservation.ReservationRequest;
 import org.slf4j.Logger;
 import org.example.ticketserver.entity.Ticket;
 import org.example.ticketserver.entity.TicketStock;
@@ -46,21 +47,50 @@ class ReservationServiceTest {
     }
 
     @Test
-    @DisplayName("티켓 예매자는 티켓을 예매한다.")
-    public void reservationTest() throws Exception {
+    public void getCountTest() throws Exception {
         // given
+        ReservationRequest.CreateReservationRequest request = new ReservationRequest.CreateReservationRequest();
         String name = "eunmi";
-
         log.info("beforeEach : 티켓 생성 및 재고 등록");
         Ticket newTicket = new Ticket("ticket1");
         Long ticketId = ticketService.createTicket(newTicket);
+        request.setName(name);
+        request.setTicketId(ticketId);
         TicketStock newTicketStock = new TicketStock(newTicket, 1);
         ticketStockService.save(newTicketStock);
         this.ticketId = ticketId;
         log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
 
         // when
-        reservationService.reserve(name, ticketId);
+        reservationService.reserve(request);
+
+
+        // then
+        Ticket ticket = ticketService.findTicketById(ticketId);
+        int reservationCount = reservationService.getReservationCount(ticket);
+        log.info("예약 갯수 : {}", reservationCount);
+
+
+    }
+
+    @Test
+    @DisplayName("티켓 예매자는 티켓을 예매한다.")
+    public void reservationTest() throws Exception {
+        // given
+        ReservationRequest.CreateReservationRequest request = new ReservationRequest.CreateReservationRequest();
+        String name = "eunmi";
+        log.info("beforeEach : 티켓 생성 및 재고 등록");
+        Ticket newTicket = new Ticket("ticket1");
+        Long ticketId = ticketService.createTicket(newTicket);
+        request.setName(name);
+        request.setTicketId(ticketId);
+        TicketStock newTicketStock = new TicketStock(newTicket, 1);
+        ticketStockService.save(newTicketStock);
+        this.ticketId = ticketId;
+        log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
+
+        // when
+        reservationService.reserve(request);
 
         // then
         Ticket ticket = ticketService.findTicketById(ticketId);
@@ -72,23 +102,29 @@ class ReservationServiceTest {
     @DisplayName("티켓 재고가 0이하일 경우 예외가 발생한다.")
     public void reservationTest2() throws Exception {
         // given
+        ReservationRequest.CreateReservationRequest request1 = new ReservationRequest.CreateReservationRequest();
+        ReservationRequest.CreateReservationRequest request2 = new ReservationRequest.CreateReservationRequest();
         String name = "eunmi";
         String name2 = "spring";
 
         log.info("beforeEach : 티켓 생성 및 재고 등록");
         Ticket newTicket = new Ticket("ticket1");
         Long ticketId = ticketService.createTicket(newTicket);
+        request1.setName(name);
+        request1.setTicketId(ticketId);
+        request2.setName(name2);
+        request2.setTicketId(ticketId);
         TicketStock newTicketStock = new TicketStock(newTicket, 1);
         ticketStockService.save(newTicketStock);
         this.ticketId = ticketId;
         log.info("티켓 초기화 완료 : 티켓 번호는 {}", ticketId);
 
         // when
-        reservationService.reserve(name, ticketId);
+        reservationService.reserve(request1);
 
         // then
         // 재고 부족으로 예외 발생
-        assertThatThrownBy(() -> reservationService.reserve(name2, ticketId))
+        assertThatThrownBy(() -> reservationService.reserve(request2))
                 .isInstanceOf(RuntimeException.class);
 
         // 재고 확인
@@ -122,8 +158,12 @@ class ReservationServiceTest {
                 try {
                     while (true) {
                         try {
-                            Thread.sleep(50);  // 과도한 루프 방지용 살짝 쉬기
-                            reservationService.reserve("member" + idx, ticketId);
+                            Thread.sleep(100);  // 과도한 루프 방지용 살짝 쉬기
+                            ReservationRequest.CreateReservationRequest request = new ReservationRequest.CreateReservationRequest();
+                            String name = "member" + idx;
+                            request.setName(name);
+                            request.setTicketId(ticketId);
+                            reservationService.reserve(request);
                             log.info("예매 성공 : {}", "member" + idx);
                             success_cnt.incrementAndGet();
                             break;  // 성공 시 루프 탈출
@@ -167,7 +207,7 @@ class ReservationServiceTest {
         TicketStock stock = ticketStockService.findByTicketId(ticket);
         log.info("결과 - 예매 성공 : {} 장, 남은 티켓 : {} 장", success_cnt, stock.getQuantity());
         assertThat(reservationService.findAll().size()).isEqualTo(success_cnt.get());
-//        assertThat(stock.getQuantity()).isZero(); // 재고가 정확히 0이어야 성공
+        assertThat(stock.getQuantity()).isZero(); // 재고가 정확히 0이어야 성공
     }
 
     @Test
@@ -194,7 +234,11 @@ class ReservationServiceTest {
                 try {
                     try {
                         Thread.sleep(100);
-                        reservationService.reserve("member" + idx, ticketId);
+                        ReservationRequest.CreateReservationRequest request = new ReservationRequest.CreateReservationRequest();
+                        String name = "member" + idx;
+                        request.setName(name);
+                        request.setTicketId(ticketId);
+                        reservationService.reserve(request);
                         log.info("예매 성공 : {}", "member" + idx);
                     } catch (Exception e) {
                         log.info("예매 실패 : {}번 회원 {}", idx, e.getMessage());
